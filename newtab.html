@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title> DO-IT</title>
+  <link rel="stylesheet" href="newtab.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>DO-IT</h1>
+      <div class="theme-toggle">
+        <button id="theme-btn" title="Toggle Theme">🌙</button>
+      </div>
+    </header>
+
+    <div class="add-task glass">
+      <input type="text" id="new-task" placeholder="Add a task...">
+      <button id="add-btn">+</button>
+    </div>
+
+    <div class="controls">
+      <input type="text" id="search" placeholder="Search tasks..." class="glass">
+      <div class="filters">
+        <button class="filter-btn" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="active">Uncompleted</button>
+        <button class="filter-btn" data-filter="completed">Completed</button>
+        <button class="filter-btn danger" id="clear-completed">Remove Completed</button>
+        <span id="task-count" class="glass">0 tasks</span>
+      </div>
+    </div>
+
+    <ul class="task-list" id="tasks"></ul>
+  </div>
+
+  <script src="newtab.js"></script>
+</body>
+</html>
