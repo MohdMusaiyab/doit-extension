@@ -8,14 +8,156 @@ document.addEventListener("DOMContentLoaded", () => {
   const taskCountSpan = document.getElementById("task-count");
   const themeBtn = document.getElementById("theme-btn");
 
+  // Background elements
+  const bgSettingsBtn = document.getElementById("bg-settings-btn");
+  const bgSettings = document.getElementById("bg-settings");
+  const closeBgSettings = document.getElementById("close-bg-settings");
+  const bgOptions = document.querySelectorAll(".bg-option");
+  const bgUpload = document.getElementById("bg-upload");
+  const uploadBtn = document.getElementById("upload-btn");
+  const removeCustomBtn = document.getElementById("remove-custom-btn");
+  const bgOpacity = document.getElementById("bg-opacity");
+  const opacityValue = document.getElementById("opacity-value");
+  const backgroundOverlay = document.querySelector(".background-overlay");
+
   let tasks = [];
   let currentFilter = "all";
+  let currentBackground = "none";
+  let customBackground = null;
 
-  // Load saved tasks
-  chrome.storage.local.get(["tasks"], (data) => {
+  // Load saved data
+  chrome.storage.local.get(["tasks", "background", "customBackground", "bgOpacity", "theme"], (data) => {
     tasks = data.tasks || [];
+    currentBackground = data.background || "none";
+    customBackground = data.customBackground || null;
+    
+    if (data.bgOpacity) {
+      bgOpacity.value = data.bgOpacity;
+      opacityValue.textContent = data.bgOpacity + "%";
+      updateBackgroundOpacity(data.bgOpacity);
+    }
+    
+    if (data.theme) {
+      document.documentElement.setAttribute("data-theme", data.theme);
+      themeBtn.textContent = data.theme === "light" ? "🌙" : "☀️";
+    }
+    
+    applyBackground();
+    updateActiveBackgroundOption();
     renderTasks();
   });
+
+  // Background Settings Panel
+  bgSettingsBtn.addEventListener("click", () => {
+    bgSettings.style.display = bgSettings.style.display === "none" ? "block" : "none";
+  });
+
+  closeBgSettings.addEventListener("click", () => {
+    bgSettings.style.display = "none";
+  });
+
+  // Click outside to close settings
+  document.addEventListener("click", (e) => {
+    if (!bgSettings.contains(e.target) && !bgSettingsBtn.contains(e.target)) {
+      bgSettings.style.display = "none";
+    }
+  });
+
+  // Background option selection
+  bgOptions.forEach(option => {
+    option.addEventListener("click", () => {
+      const bgValue = option.dataset.bg;
+      currentBackground = bgValue;
+      applyBackground();
+      updateActiveBackgroundOption();
+      saveBackgroundSettings();
+    });
+  });
+
+  // Custom background upload
+  uploadBtn.addEventListener("click", () => {
+    bgUpload.click();
+  });
+
+  bgUpload.addEventListener("change", (e) => {
+    const file = e.target.files[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        customBackground = e.target.result;
+        currentBackground = "custom";
+        applyBackground();
+        updateActiveBackgroundOption();
+        saveBackgroundSettings();
+        removeCustomBtn.style.display = "inline-block";
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  // Remove custom background
+  removeCustomBtn.addEventListener("click", () => {
+    customBackground = null;
+    if (currentBackground === "custom") {
+      currentBackground = "none";
+      applyBackground();
+      updateActiveBackgroundOption();
+    }
+    removeCustomBtn.style.display = "none";
+    saveBackgroundSettings();
+  });
+
+  // Background opacity control
+  bgOpacity.addEventListener("input", (e) => {
+    const opacity = e.target.value;
+    opacityValue.textContent = opacity + "%";
+    updateBackgroundOpacity(opacity);
+    saveBackgroundSettings();
+  });
+
+  // Apply background image
+  function applyBackground() {
+    const body = document.body;
+    
+    if (currentBackground === "none") {
+      body.style.backgroundImage = "";
+    } else if (currentBackground === "custom" && customBackground) {
+      body.style.backgroundImage = `url('${customBackground}')`;
+      removeCustomBtn.style.display = "inline-block";
+    } else if (currentBackground !== "none") {
+      body.style.backgroundImage = `url('images/${currentBackground}')`;
+    }
+
+    // Show/hide custom background remove button
+    if (customBackground) {
+      removeCustomBtn.style.display = "inline-block";
+    }
+  }
+
+  // Update background opacity
+  function updateBackgroundOpacity(opacity) {
+    const normalizedOpacity = (100 - opacity) / 100;
+    backgroundOverlay.style.opacity = normalizedOpacity;
+  }
+
+  // Update active background option visual
+  function updateActiveBackgroundOption() {
+    bgOptions.forEach(option => {
+      option.classList.remove("active");
+      if (option.dataset.bg === currentBackground) {
+        option.classList.add("active");
+      }
+    });
+  }
+
+  // Save background settings
+  function saveBackgroundSettings() {
+    chrome.storage.local.set({
+      background: currentBackground,
+      customBackground: customBackground,
+      bgOpacity: bgOpacity.value
+    });
+  }
 
   // Add new task
   addBtn.addEventListener("click", () => {
@@ -198,10 +340,11 @@ document.addEventListener("DOMContentLoaded", () => {
   themeBtn.addEventListener("click", () => {
     const isLight =
       document.documentElement.getAttribute("data-theme") === "light";
-    document.documentElement.setAttribute(
-      "data-theme",
-      isLight ? "dark" : "light"
-    );
+    const newTheme = isLight ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", newTheme);
     themeBtn.textContent = isLight ? "☀️" : "🌙";
+    
+    // Save theme preference
+    chrome.storage.local.set({ theme: newTheme });
   });
 });

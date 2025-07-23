@@ -7,13 +7,68 @@
   <link rel="stylesheet" href="newtab.css" />
 </head>
 <body>
+  <div class="background-overlay"></div>
+  
   <div class="container">
     <header>
       <h1>DO-IT</h1>
-      <div class="theme-toggle">
-        <button id="theme-btn" title="Toggle Theme">🌙</button>
+      <div class="header-controls">
+        <button id="bg-settings-btn" class="settings-btn" title="Background Settings">🖼️</button>
+        <button id="theme-btn" class="theme-btn" title="Toggle Theme">🌙</button>
       </div>
     </header>
+
+    <!-- Background Settings Panel -->
+    <div id="bg-settings" class="bg-settings glass" style="display: none;">
+      <h3>Background Settings</h3>
+      
+      <div class="bg-section">
+        <h4>Default Backgrounds</h4>
+        <div class="bg-gallery">
+          <div class="bg-option" data-bg="none">
+            <div class="bg-preview no-bg">None</div>
+          </div>
+          <div class="bg-option" data-bg="bg1.webp">
+            <div class="bg-preview" style="background-image: url('images/bg1.webp')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg2.webp">
+            <div class="bg-preview" style="background-image: url('images/bg2.webp')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg3.webp">
+            <div class="bg-preview" style="background-image: url('images/bg3.webp')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg4.webp">
+            <div class="bg-preview" style="background-image: url('images/bg4.webp')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg5.webp">
+            <div class="bg-preview" style="background-image: url('images/bg5.webp')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg6.jpg">
+            <div class="bg-preview" style="background-image: url('images/bg6.jpg')"></div>
+          </div>
+          <div class="bg-option" data-bg="bg7.webp">
+            <div class="bg-preview" style="background-image: url('images/bg7.webp')"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-section">
+        <h4>Custom Background</h4>
+        <div class="upload-area">
+          <input type="file" id="bg-upload" accept="image/*" style="display: none;">
+          <button id="upload-btn" class="upload-btn">Upload Image</button>
+          <button id="remove-custom-btn" class="remove-btn" style="display: none;">Remove Custom</button>
+        </div>
+      </div>
+
+      <div class="bg-controls">
+        <label>
+          Opacity: <span id="opacity-value">70%</span>
+          <input type="range" id="bg-opacity" min="10" max="100" value="70">
+        </label>
+        <button id="close-bg-settings" class="close-btn">Close</button>
+      </div>
+    </div>
 
     <div class="add-task glass">
       <input type="text" id="new-task" placeholder="Add a task...">
