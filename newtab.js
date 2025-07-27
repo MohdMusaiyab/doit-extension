@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const clearCompletedBtn = document.getElementById("clear-completed");
   const taskCountSpan = document.getElementById("task-count");
   const themeBtn = document.getElementById("theme-btn");
+  const container = document.querySelector(".container");
 
   // Background elements
   const bgSettingsBtn = document.getElementById("bg-settings-btn");
@@ -20,36 +21,150 @@ document.addEventListener("DOMContentLoaded", () => {
   const opacityValue = document.getElementById("opacity-value");
   const backgroundOverlay = document.querySelector(".background-overlay");
 
+  // Alignment elements
+  const alignSettingsBtn = document.getElementById("align-settings-btn");
+  const alignSettings = document.getElementById("align-settings");
+  const closeAlignSettings = document.getElementById("close-align-settings");
+  const alignOptions = document.querySelectorAll(".align-option");
+
   let tasks = [];
   let currentFilter = "all";
   let currentBackground = "none";
   let customBackground = null;
+  let currentAlignment = "center";
 
   // Load saved data
-  chrome.storage.local.get(["tasks", "background", "customBackground", "bgOpacity", "theme"], (data) => {
-    tasks = data.tasks || [];
-    currentBackground = data.background || "none";
-    customBackground = data.customBackground || null;
-    
-    if (data.bgOpacity) {
-      bgOpacity.value = data.bgOpacity;
-      opacityValue.textContent = data.bgOpacity + "%";
-      updateBackgroundOpacity(data.bgOpacity);
+  const loadData = () => {
+    try {
+      // Try Chrome storage first, fallback to localStorage
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.get(["tasks", "background", "customBackground", "bgOpacity", "theme", "alignment"], (data) => {
+          tasks = data.tasks || [];
+          currentBackground = data.background || "none";
+          customBackground = data.customBackground || null;
+          currentAlignment = data.alignment || "center";
+          
+          if (data.bgOpacity) {
+            bgOpacity.value = data.bgOpacity;
+            opacityValue.textContent = data.bgOpacity + "%";
+            updateBackgroundOpacity(data.bgOpacity);
+          }
+          
+          if (data.theme) {
+            document.documentElement.setAttribute("data-theme", data.theme);
+            themeBtn.textContent = data.theme === "light" ? "🌙" : "☀️";
+          }
+          
+          applyAlignment();
+          applyBackground();
+          updateActiveBackgroundOption();
+          updateActiveAlignmentOption();
+          renderTasks();
+        });
+      } else {
+        // Fallback to localStorage
+        const savedData = JSON.parse(localStorage.getItem('todoAppData') || '{}');
+        tasks = savedData.tasks || [];
+        currentBackground = savedData.background || "none";
+        customBackground = savedData.customBackground || null;
+        currentAlignment = savedData.alignment || "center";
+        
+        if (savedData.bgOpacity) {
+          bgOpacity.value = savedData.bgOpacity;
+          opacityValue.textContent = savedData.bgOpacity + "%";
+          updateBackgroundOpacity(savedData.bgOpacity);
+        }
+        
+        if (savedData.theme) {
+          document.documentElement.setAttribute("data-theme", savedData.theme);
+          themeBtn.textContent = savedData.theme === "light" ? "🌙" : "☀️";
+        }
+        
+        applyAlignment();
+        applyBackground();
+        updateActiveBackgroundOption();
+        updateActiveAlignmentOption();
+        renderTasks();
+      }
+    } catch (error) {
+      console.log("Loading default settings");
+      applyAlignment();
+      applyBackground();
+      updateActiveBackgroundOption();
+      updateActiveAlignmentOption();
+      renderTasks();
     }
-    
-    if (data.theme) {
-      document.documentElement.setAttribute("data-theme", data.theme);
-      themeBtn.textContent = data.theme === "light" ? "🌙" : "☀️";
+  };
+
+  // Save data
+  const saveData = () => {
+    try {
+      if (typeof chrome !== 'undefined' && chrome.storage) {
+        chrome.storage.local.set({
+          tasks,
+          background: currentBackground,
+          customBackground,
+          alignment: currentAlignment,
+          bgOpacity: bgOpacity.value,
+          theme: document.documentElement.getAttribute("data-theme")
+        });
+      } else {
+        // Fallback to localStorage
+        const dataToSave = {
+          tasks,
+          background: currentBackground,
+          customBackground,
+          alignment: currentAlignment,
+          bgOpacity: bgOpacity.value,
+          theme: document.documentElement.getAttribute("data-theme")
+        };
+        localStorage.setItem('todoAppData', JSON.stringify(dataToSave));
+      }
+    } catch (error) {
+      console.log("Could not save data");
     }
-    
-    applyBackground();
-    updateActiveBackgroundOption();
-    renderTasks();
+  };
+
+  // Alignment Settings Panel
+  alignSettingsBtn.addEventListener("click", () => {
+    alignSettings.style.display = alignSettings.style.display === "none" ? "block" : "none";
+    bgSettings.style.display = "none";
   });
+
+  closeAlignSettings.addEventListener("click", () => {
+    alignSettings.style.display = "none";
+  });
+
+  // Alignment option selection
+  alignOptions.forEach(option => {
+    option.addEventListener("click", () => {
+      const alignValue = option.dataset.align;
+      currentAlignment = alignValue;
+      applyAlignment();
+      updateActiveAlignmentOption();
+      saveData();
+    });
+  });
+
+  // Apply alignment
+  function applyAlignment() {
+    container.className = `container align-${currentAlignment}`;
+  }
+
+  // Update active alignment option visual
+  function updateActiveAlignmentOption() {
+    alignOptions.forEach(option => {
+      option.classList.remove("active");
+      if (option.dataset.align === currentAlignment) {
+        option.classList.add("active");
+      }
+    });
+  }
 
   // Background Settings Panel
   bgSettingsBtn.addEventListener("click", () => {
     bgSettings.style.display = bgSettings.style.display === "none" ? "block" : "none";
+    alignSettings.style.display = "none";
   });
 
   closeBgSettings.addEventListener("click", () => {
@@ -58,8 +173,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Click outside to close settings
   document.addEventListener("click", (e) => {
-    if (!bgSettings.contains(e.target) && !bgSettingsBtn.contains(e.target)) {
+    if (!bgSettings.contains(e.target) && !bgSettingsBtn.contains(e.target) &&
+        !alignSettings.contains(e.target) && !alignSettingsBtn.contains(e.target)) {
       bgSettings.style.display = "none";
+      alignSettings.style.display = "none";
     }
   });
 
@@ -70,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
       currentBackground = bgValue;
       applyBackground();
       updateActiveBackgroundOption();
-      saveBackgroundSettings();
+      saveData();
     });
   });
 
@@ -88,7 +205,7 @@ document.addEventListener("DOMContentLoaded", () => {
         currentBackground = "custom";
         applyBackground();
         updateActiveBackgroundOption();
-        saveBackgroundSettings();
+        saveData();
         removeCustomBtn.style.display = "inline-block";
       };
       reader.readAsDataURL(file);
@@ -104,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
       updateActiveBackgroundOption();
     }
     removeCustomBtn.style.display = "none";
-    saveBackgroundSettings();
+    saveData();
   });
 
   // Background opacity control
@@ -112,7 +229,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const opacity = e.target.value;
     opacityValue.textContent = opacity + "%";
     updateBackgroundOpacity(opacity);
-    saveBackgroundSettings();
+    saveData();
   });
 
   // Apply background image
@@ -150,22 +267,14 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Save background settings
-  function saveBackgroundSettings() {
-    chrome.storage.local.set({
-      background: currentBackground,
-      customBackground: customBackground,
-      bgOpacity: bgOpacity.value
-    });
-  }
-
   // Add new task
   addBtn.addEventListener("click", () => {
     const text = newTaskInput.value.trim();
     if (text) {
       tasks.push({ id: Date.now(), text, completed: false });
-      saveTasks();
+      saveData();
       newTaskInput.value = "";
+      renderTasks();
     }
   });
 
@@ -222,14 +331,16 @@ document.addEventListener("DOMContentLoaded", () => {
       const checkbox = taskEl.querySelector("input");
       checkbox.addEventListener("change", () => {
         task.completed = checkbox.checked;
-        saveTasks();
+        saveData();
+        renderTasks();
       });
 
       // Delete task
       const deleteBtn = taskEl.querySelector(".delete");
       deleteBtn.addEventListener("click", () => {
         tasks = tasks.filter((t) => t.id !== task.id);
-        saveTasks();
+        saveData();
+        renderTasks();
       });
 
       // Edit task (double-click)
@@ -238,7 +349,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const newText = prompt("Edit task:", task.text);
         if (newText) {
           task.text = newText.trim();
-          saveTasks();
+          saveData();
+          renderTasks();
         }
       });
 
@@ -266,11 +378,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Save tasks
-  function saveTasks() {
-    chrome.storage.local.set({ tasks }, () => renderTasks());
-  }
-
   // Update task order after drag/drop
   function updateTaskOrder() {
     const newOrder = Array.from(taskList.children).map((el) => {
@@ -278,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return tasks.find((t) => t.id === id);
     });
     tasks = newOrder.filter(Boolean);
-    saveTasks();
+    saveData();
   }
 
   // Search
@@ -305,7 +412,8 @@ document.addEventListener("DOMContentLoaded", () => {
   // Remove all completed tasks
   clearCompletedBtn.addEventListener("click", () => {
     tasks = tasks.filter((t) => !t.completed);
-    saveTasks();
+    saveData();
+    renderTasks();
   });
 
   // Drag and drop logic
@@ -345,6 +453,9 @@ document.addEventListener("DOMContentLoaded", () => {
     themeBtn.textContent = isLight ? "☀️" : "🌙";
     
     // Save theme preference
-    chrome.storage.local.set({ theme: newTheme });
+    saveData();
   });
+
+  // Initialize the app
+  loadData();
 });

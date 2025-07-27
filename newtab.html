@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title> DO-IT</title>
+  <title>DO-IT</title>
   <link rel="stylesheet" href="newtab.css" />
 </head>
 <body>
@@ -13,10 +13,28 @@
     <header>
       <h1>DO-IT</h1>
       <div class="header-controls">
+        <button id="align-settings-btn" class="align-btn" title="Alignment Settings">⚙️</button>
         <button id="bg-settings-btn" class="settings-btn" title="Background Settings">🖼️</button>
         <button id="theme-btn" class="theme-btn" title="Toggle Theme">🌙</button>
       </div>
     </header>
+
+    <!-- Alignment Settings Panel -->
+    <div id="align-settings" class="align-settings glass" style="display: none;">
+      <h3>Content Alignment</h3>
+      <div class="align-options">
+        <button class="align-option active" data-align="center">
+          <span>🏠</span> Center
+        </button>
+        <button class="align-option" data-align="left">
+          <span>⬅️</span> Left
+        </button>
+        <button class="align-option" data-align="right">
+          <span>➡️</span> Right
+        </button>
+      </div>
+      <button id="close-align-settings" class="close-btn">Close</button>
+    </div>
 
     <!-- Background Settings Panel -->
     <div id="bg-settings" class="bg-settings glass" style="display: none;">
@@ -78,7 +96,7 @@
     <div class="controls">
       <input type="text" id="search" placeholder="Search tasks..." class="glass">
       <div class="filters">
-        <button class="filter-btn" data-filter="all">All</button>
+        <button class="filter-btn active" data-filter="all">All</button>
         <button class="filter-btn" data-filter="active">Uncompleted</button>
         <button class="filter-btn" data-filter="completed">Completed</button>
         <button class="filter-btn danger" id="clear-completed">Remove Completed</button>
